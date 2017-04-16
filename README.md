@@ -1,86 +1,54 @@
-# SFX-I2S-web-trigger
-ESP8266 Arduino Sound F/X I2S web trigger
+# Play WAV from SPIFFS
+Play WAV sounds from SPIFFS to an I2S device using the Digistump Oak
+Uses wavspiffs.h code as per bbx10's SFX-I2S-web-trigger
 
-![ESP8266, I2S DAC, speaker, battery](/images/sfx-i2s.png)
+This is a simpler version of the original code. Unlike to original, web triggering has been removed. I've also taken most of the functions from the example sketch espi2s.ino and moved them into the wavspiffs files. These I've renamed to WAV_SPIFFS in order to keep them distinct from the originals. I've also increased the audio buffer for more even playback.
 
-Press the 0 button to play file T0.wav, press the 1 button to play file T1.wav,
-etc. The web interface is identical the related project
-[SFX-web-trigger](https://github.com/bbx10/SFX-web-trigger). The other project
-uses a much more expensive MP3/OGG decoder board. This project uses a $6 I2S
-DAC with 3W audio amplifier board. The WAV audio files are stored in the ESP8266
-Flash.
+An example sketch using the Digistump Oak is included.
 
-Most ESP-12s boards and modules come with 4 Mbytes of Flash of which 3 MBbytes is used as a Flash
-file system named SPIFFS. To store the WAV files in the SPIFFS file system,
-create a data directory in the same directory with the .INO file. Copy WAV
-files to the directory with names T0.wav, T1.wav, ... T9.wav. Install the
-[SPIFFS upload tool](http://www.esp8266.com/viewtopic.php?f=32&t=10081). Use
-the tool to upload the WAV files to the ESP8266 Flash.
+Important note regarding the Oak's core_esp8266_i2s implementation, as of this writing: the pin declaration for I2S in Oak's core_esp8266_i2s.c, line 222, is incorrect:
 
-The WAV files should be mono (number of channels = 1) and contain uncompressed
-16-bit PCM audio. Samples rates 11025, 22050, and 44100 have been verified to
-work. The included test WAV files were generated using Festival (text to
-speech) software.
+    `pinMode(esp8266_gpioToPin[5], FUNCTION_1); //I2SO_BCK (SCLK)`
 
-Upload the ESPI2S.INO application. Connect any web browser to the ESP8266 web
-server at http://espsfxtrigger.local. If this does not work use the ESP8266
-IP address. This should bring up the web page shown above. Press buttons
-0...9 to play WAV files T0.wav ... T9.wav.
+should read
 
-If the ESP8266 is unable to connect to an Access Point, it becomes an Access
-Point. Connect to it by going into your wireless settings. The AP name should
-look like ESP\_SFX\_TRIGGER. Once connected the ESP will bring up a web page
-where you can enter the SSID and password of your WiFi router.
+  pinMode(esp8266_gpioToPin[15], FUNCTION_1); //I2SO_BCK (SCLK)
 
-How might this device be used? Load up your favorite sound samples such as
-elephant trumpet, minion laugh, cat meow, etc. Bury the device in the couch
-cushions. Wait for your victim to sit down. While you appear to play Candy
-Crush on your phone, remotely trigger your favorite sound F/X!
+(I've already logged a pull request for this one.) Similar declaration on line 244 is correct.
+
+Pin mappings:  LRC - Oak pin 0 (ESP8266 pin 2)
+               BCLK - Oak pin 6 (ESP8266 pin 15)
+               DIN - Oak pin 3 (ESP8266 pin 3)
+               
+WAV files should be mono (number of channels = 1) and contain uncompressed 16-bit PCM audio. Samples rates 8000, 11025, 22050, and 44100 have been verified to work. Included test WAV files were generated using Audacity; files created using Festival have previously been reported to work.
+
+Please note that audio decoded directly from the ESP8266 won't be as clean as that achieved by a dedicated decoder board. You won't get as much storage from SPIFFS as boards with on-board storage. You won't be able to play compressed files like MP3s or Oggs so you'll be very limited in playback time. What you do get is a very small sized, simple, powered solution.
 
 ## Hardware components
 
 * [Adafruit I2S 3W Class D Amplifier Breakout - MAX98357A](https://www.adafruit.com/products/3006)
-This board converts the digital audio data from the ESP8266 I2S controller to
-analog audio and amplifies the signal to drive a speaker. This breakout board is
-mono instead of stereo but it is only $6!
+This small, dirt-cheap board converts the digital audio data from the ESP8266 I2S controller to analog (mono) audio and amplifies the signal to drive a speaker.
 
-* [Adafruit Feather Huzzah with ESP8266](https://www.adafruit.com/products/2821)
-This ESP8266 board was chosen because it has a lithium battery charger. Other
-ESP8266 boards should also work.
+* [Digistump Oak](http://digistump.com/category/22)
 
-* 3 Watt, 4 Ohm speaker
+* 1+ Watt, 4-8 Ohm speaker
 
-* Lithium battery
+* power source for Oak and breakout board
 
 ## Connection Diagram
 
-Adafruit I2S DAC |ESP8266            | Description
+Adafruit I2S DAC |Digistump Oak      | Description
 -----------------|-------------------|-------------
-LRC              |GPIO2/TX1 LRCK     | Left/Right audio
-BCLK             |GPIO15 BCLK        | I2S Clock
-DIN              |GPIO03/RX0 DATA    | I2S Data
+LRC              |P0                 | Left/Right audio
+BCLK             |P3                 | I2S Clock
+DIN              |P6                 | I2S Data
 GAIN             |not connected      | 9 dB gain
 SD               |not connected      | Stereo average
 GND              |GND                | Ground
-Vin              |BAT                | 3.7V battery power
+Vin              |not connected      | 3.3-5V battery power
 
-If you need more volume you could use a booster to generate 5V from the battery
-and drive the DAC board Vin with 5V. Also experiment with the GAIN pin.
+Note that I don't recommend driving the breakout board using the Oak's VCC pin, though you could try. Power output would be limited, and I suspect you'll get cleaner audio powering it directly.
 
 ## Software components
 
-* [WiFiManager](https://github.com/tzapu/WiFiManager) eliminates
-the need to store the WiFi SSID and password in the source code. WiFiManager
-will switch the ESP8266 to an access point and web server to get the SSID and
-password when needed.
-
-* [SPIFFS](http://esp8266.github.io/Arduino/versions/2.3.0/doc/filesystem.html)
-The SPIFFS Flash file system is included with the ESP8266 Arduino board support
-package. The header file name is FS.h.
-
-* ESP8266 I2S support is included with the ESP8266 Arduino board support package.
-The header file names are i2s.h and i2s\_reg.h.
-
-* [WebSockets](https://github.com/Links2004/arduinoWebSockets)
-
-* Other components are included with the ESP8266 Arduino package.
+The FS library handles SPIFFS file storage; the I2S library handles output to the MAX98357 breakout board. Both are part of the Oak's core code.
