@@ -12,7 +12,7 @@ Important note regarding the Oak's core_esp8266_i2s implementation, as of this w
 
 should read
 
-  pinMode(esp8266_gpioToPin[15], FUNCTION_1); //I2SO_BCK (SCLK)
+    `pinMode(esp8266_gpioToPin[15], FUNCTION_1); //I2SO_BCK (SCLK)`
 
 (I've already logged a pull request for this one.) Similar declaration on line 244 is correct.
 
