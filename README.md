@@ -1,6 +1,5 @@
 # Play WAV from SPIFFS
-Play WAV sounds from SPIFFS to an I2S device using the Digistump Oak
-Uses wavspiffs.h code as per bbx10's SFX-I2S-web-trigger
+Play WAV sounds from SPIFFS to an I2S device using the Digistump Oak. Uses wavspiffs.h code as per [bbx10's SFX-I2S-web-trigger](https://github.com/bbx10/SFX-I2S-web-trigger)
 
 This is a simpler version of the original code. Unlike to original, web triggering has been removed. I've also taken most of the functions from the example sketch espi2s.ino and moved them into the wavspiffs files. These I've renamed to WAV_SPIFFS in order to keep them distinct from the originals. I've also increased the audio buffer for more even playback.
 
